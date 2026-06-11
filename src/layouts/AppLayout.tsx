@@ -2,8 +2,8 @@ import { type ReactNode } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ROUTES } from '../router/routes';
 import { useAuthStore } from '../store/authStore';
-import { Screen, Sidebar } from '../components/common/SideBar';
 import { TopBar } from '../components/common/TopBar';
+import { Screen, Sidebar } from '@/components/common/Sidebar';
 
 const titles: Record<Screen, { title: string; crumbs: string[] }> = {
   dashboard:  { title: 'Dashboard',             crumbs: ['Workspace', 'Dashboard'] },

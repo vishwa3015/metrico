@@ -46,7 +46,7 @@ export function Login({ onLogin }: { onLogin: () => void }) {
               <Input
                 id="email"
                 type="email"
-                defaultValue="avery.t@metrico.io"
+                defaultValue=""
               />
             </div>
 
@@ -58,7 +58,7 @@ export function Login({ onLogin }: { onLogin: () => void }) {
               <Input
                 id="password"
                 type="password"
-                defaultValue="••••••••••"
+                defaultValue=""
               />
             </div>
 
