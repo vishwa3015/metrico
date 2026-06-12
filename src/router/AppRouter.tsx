@@ -1,13 +1,11 @@
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { ROUTES } from './routes'
-import PrivateRoute from './PrivateRoute'
 import PublicRoute from './PublicRoute'
 import { AppLayout } from '../layouts/AppLayout'
 import { TestResults } from '../pages/TestResults'
-import { useAuthStore } from '../store/authStore'
 import { Login } from '../pages/Login'
 import { Dashboard } from '../pages/Dashboard'
-
+import PrivateRoute from './PrivateRoute'
 
 const AppRouter = () => {
   return (
@@ -17,7 +15,7 @@ const AppRouter = () => {
           path={ROUTES.LOGIN}
           element={
             <PublicRoute>
-              <LoginPage />
+              <Login />
             </PublicRoute>
           }
         />
@@ -44,11 +42,6 @@ const AppRouter = () => {
       </Routes>
     </BrowserRouter>
   )
-}
-
-function LoginPage() {
-  const login = useAuthStore(state => state.login)
-  return <Login onLogin={login} />
 }
 
 function DashboardPage() {
