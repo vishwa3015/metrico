@@ -20,7 +20,7 @@ const ALL_ITEMS: { id: Screen; label: string; Icon: any }[] = [
   { id: 'account', label: 'Account / Settings', Icon: Settings },
 ]
 
-const SUPERVISOR_HIDDEN: Screen[] = ['users', 'thresholds']
+const SUPERVISOR_HIDDEN: Screen[] = ['users', 'thresholds', 'audit']
 
 export function Sidebar({
   active,
