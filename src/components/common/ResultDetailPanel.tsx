@@ -1,46 +1,53 @@
-import type { TestResult, RangeStatus } from "./data";
+import type { TestResult, TestResultDetail } from "../../types/result.types";
+import ResultService from "../../services/result.service";
+import { useEffect, useState } from "react";
 import { StatusBadge } from "./badges";
-import { X, Download, Info, RotateCcw, FlaskConical } from "lucide-react";
+import { X, Download, Info, RotateCcw, FlaskConical, Loader2 } from "lucide-react";
 
 type Analyte = "HOCl" | "pH";
 
-const HOCL_RANGE = { min: 50, max: 100, label: "50 – 100 ppm", unit: "ppm" };
-const PH_RANGE   = { min: 6.0, max: 8.0, label: "6.0 – 8.0",   unit: "" };
-
-const ROLE_BY_OPERATOR: Record<string, string> = {
-  "J. Okafor":  "Operator",
-  "M. Reyes":   "Supervisor",
-  "S. Müller":  "Operator",
-  "A. Chen":    "Operator",
-};
-
-function deriveHoclPpm(v: number | null): number | null {
-  if (v === null) return null;
-  return Math.round(v * 40);
+function toRangeStatusBadge(status: string) {
+  switch (status) {
+    case "Within Range": return "in_range" as const;
+    case "Below Range":
+    case "Above Range": return "out_of_range" as const;
+    case "Invalid Reading": return "invalid" as const;
+    default: return "invalid" as const;
+  }
 }
 
-function recomputeHocl(ppm: number | null): RangeStatus {
-  if (ppm === null) return "invalid";
-  if (ppm < HOCL_RANGE.min || ppm > HOCL_RANGE.max) return "out_of_range";
-  if (ppm < HOCL_RANGE.min + 10 || ppm > HOCL_RANGE.max - 10) return "needs_attention";
-  return "in_range";
+function formatTimestamp(iso: string) {
+  try { return new Date(iso).toLocaleString() } catch { return iso }
 }
 
 export function ResultDetailPanel({
-  result, analyte = "HOCl", onClose,
+  result,
+  analyte = "HOCl",
+  onClose,
 }: {
   result: TestResult | null;
   analyte?: Analyte;
   onClose: () => void;
 }) {
+  const [detail, setDetail] = useState<TestResultDetail | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!result) { setDetail(null); return; }
+    setLoading(true);
+    setError(null);
+    ResultService.getResultById(result.result_id)
+      .then(setDetail)
+      .catch(() => setError("Failed to load record details."))
+      .finally(() => setLoading(false));
+  }, [result?.result_id]);
+
   if (!result) return null;
 
   const isHocl = analyte === "HOCl";
-  const value = isHocl ? deriveHoclPpm(result.hocl) : result.ph;
-  const status = isHocl ? recomputeHocl(deriveHoclPpm(result.hocl)) : result.phStatus;
-  const range  = isHocl ? HOCL_RANGE : PH_RANGE;
-  const cartridgeType = isHocl ? "Metrico HOCl Cartridge (C-HOCl-22)" : "Metrico pH Cartridge (C-pH-22)";
-  const role = ROLE_BY_OPERATOR[result.operator] ?? "Operator";
+  const displayData = detail ?? result;
+  const rangeLabel = `${displayData.accepted_min_value} – ${displayData.accepted_max_value}${displayData.unit ? ` ${displayData.unit}` : ""}`;
 
   return (
     <div className="fixed inset-0 z-40 flex">
@@ -49,55 +56,70 @@ export function ResultDetailPanel({
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div>
             <div className="text-xs text-slate-500">Record</div>
-            <div className="text-slate-900 tracking-tight">{result.id} · {analyte}</div>
+            <div className="text-slate-900 tracking-tight">
+              {displayData.result_id.slice(0, 8)}… · {analyte}
+            </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-md hover:bg-slate-100">
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-700 p-1.5 rounded-md hover:bg-slate-100"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs ring-1 ring-inset ${
-              isHocl ? "bg-teal-50 text-teal-700 ring-teal-200" : "bg-sky-50 text-sky-700 ring-sky-200"
-            }`}>
+            <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs ring-1 ring-inset ${isHocl
+                ? "bg-teal-50 text-teal-700 ring-teal-200"
+                : "bg-sky-50 text-sky-700 ring-sky-200"
+              }`}>
               <FlaskConical className="h-3.5 w-3.5" /> {analyte}
             </span>
-            <StatusBadge status={status} />
-            <span className="text-xs text-slate-500 ml-1">{result.timestamp}</span>
+            <StatusBadge status={toRangeStatusBadge(displayData.result_status)} />
+            <span className="text-xs text-slate-500 ml-1">
+              {formatTimestamp(displayData.tested_at)}
+            </span>
+            {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400 ml-auto" />}
           </div>
+
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {error}
+            </div>
+          )}
 
           <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-5">
             <div className="text-xs uppercase tracking-wider text-slate-500">Estimated value</div>
             <div className="mt-2 flex items-baseline gap-2">
               <div className="text-slate-900 text-3xl tracking-tight">
-                {value === null ? "—" : <>Approx. {value}</>}
+                {displayData.estimated_value === null
+                  ? "—"
+                  : <>Approx. {displayData.estimated_value}</>}
               </div>
-              {range.unit && <div className="text-sm text-slate-500">{range.unit}</div>}
+              {displayData.unit && (
+                <div className="text-sm text-slate-500">{displayData.unit}</div>
+              )}
             </div>
+
             <div className="mt-4 grid grid-cols-2 gap-4">
               <div>
-                <div className="text-xs text-slate-500 mb-1.5">
-                  {isHocl ? "Detected cartridge pads" : "Detected color"}
+                <div className="text-xs text-slate-500 mb-1.5">Detected color</div>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="h-9 w-14 rounded-md ring-1 ring-inset ring-slate-300 shadow-inner"
+                    style={{ backgroundColor: displayData.detected_color_hex }}
+                    aria-label={displayData.detected_color_label ?? "Detected color"}
+                  />
+                  {displayData.detected_color_label && (
+                    <span className="text-xs text-slate-500">{displayData.detected_color_label}</span>
+                  )}
                 </div>
-                {isHocl ? (
-                  <div className="flex items-center gap-2">
-                    <PadSwatch color={result.hoclYellow} label="Yellow pad" />
-                    <PadSwatch color={result.hoclBlue}   label="Blue pad" />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="h-9 w-14 rounded-md ring-1 ring-inset ring-slate-300 shadow-inner"
-                      style={{ backgroundColor: result.phColor }}
-                      aria-label="Detected color"
-                    />
-                  </div>
-                )}
               </div>
+
               <div>
                 <div className="text-xs text-slate-500 mb-1.5">Accepted range</div>
-                <div className="text-sm text-slate-800 tabular-nums">{range.label}</div>
+                <div className="text-sm text-slate-800 tabular-nums">{rangeLabel}</div>
                 <div className="mt-2 relative h-2 rounded-full bg-slate-200/70">
                   <div className="absolute top-0 bottom-0 left-[15%] right-[15%] rounded-full bg-emerald-300/80" />
                 </div>
@@ -113,48 +135,53 @@ export function ResultDetailPanel({
           <div>
             <div className="text-xs uppercase tracking-wider text-slate-500 mb-2">Test context</div>
             <dl className="grid grid-cols-2 gap-y-2.5 text-sm">
-              <Item k="User name"          v={result.operator} />
-              <Item k="User role"          v={role} />
-              <Item k="Facility"           v={result.site.split(" — ")[0]} />
-              <Item k="Sub-location"       v={result.site.split(" — ")[1] ?? "—"} />
-              <Item k="Organization"       v="Metrico Diagnostics" />
-              <Item k="Device ID"          v={result.device} />
-              <Item k="Cartridge type"     v={cartridgeType} />
-              <Item k="Cartridge lot"      v={result.cartridgeLot} />
-              <Item k="Date / time"        v={result.timestamp} />
+              <Item k="User" v={displayData.user_name_snapshot} />
+              <Item k="User role" v={detail?.user_role_snapshot ?? "—"} />
+              <Item k="Device" v={displayData.device_name_snapshot} />
+              <Item k="Device ID" v={displayData.device_id} />
+              <Item k="Device serial" v={detail?.device_serial_snapshot ?? "—"} />
+              <Item k="Test type" v={displayData.test_type} />
+              <Item k="Cartridge" v={detail?.cartridge_type ?? displayData.test_type} />
+              <Item k="Sync status" v={displayData.sync_status} />
+              <Item k="Tested at" v={formatTimestamp(displayData.tested_at)} />
+              {detail?.synced_at && (
+                <Item k="Synced at" v={formatTimestamp(detail.synced_at)} />
+              )}
             </dl>
           </div>
 
           <div>
             <div className="text-xs uppercase tracking-wider text-slate-500 mb-2">Notes</div>
             <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700 min-h-[64px]">
-              {result.notes ?? <span className="text-slate-400">No notes recorded for this test.</span>}
+              {detail?.notes_from_mobile
+                ? detail.notes_from_mobile
+                : <span className="text-slate-400">No notes recorded for this test.</span>}
             </div>
           </div>
+
+          {/* Retest link */}
+          {displayData.retest_of_result_id && (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 flex items-center gap-2">
+              <RotateCcw className="h-3.5 w-3.5 text-slate-400" />
+              Retest of record{" "}
+              <span className="font-mono text-slate-800">
+                {displayData.retest_of_result_id.slice(0, 8)}…
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="border-t border-slate-100 px-6 py-4 flex items-center gap-2">
-          <button className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-700 hover:bg-slate-50">
-            <RotateCcw className="h-4 w-4" /> View Retest Record
-          </button>
+          {displayData.retest_of_result_id && (
+            <button className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-700 hover:bg-slate-50">
+              <RotateCcw className="h-4 w-4" /> View Original Record
+            </button>
+          )}
           <button className="ml-auto inline-flex items-center gap-2 rounded-lg bg-gradient-to-b from-teal-500 to-teal-600 px-3.5 py-2 text-sm text-white shadow-sm ring-1 ring-inset ring-teal-700/20 hover:from-teal-500 hover:to-teal-700">
             <Download className="h-4 w-4" /> Export Record
           </button>
         </div>
       </aside>
-    </div>
-  );
-}
-
-function PadSwatch({ color, label }: { color: string; label: string }) {
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <span
-        className="h-9 w-9 rounded-md ring-1 ring-inset ring-slate-300 shadow-inner"
-        style={{ backgroundColor: color }}
-        aria-label={label}
-      />
-      <span className="text-[10px] text-slate-500">{label}</span>
     </div>
   );
 }
