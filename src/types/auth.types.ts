@@ -8,7 +8,7 @@ export interface AuthUser {
   role: UserRole
   organization_id: string
   facility_id: string
-  last_login_at?: string
+  last_login_at?: string | null
 }
 
 export interface LoginPayload {
