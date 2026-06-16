@@ -1,40 +1,22 @@
-type InputProps = {
-  value: string
-  onChange: (val: string) => void
-  placeholder?: string
-  type?: string
-  label?: string
-  error?: string
-  disabled?: boolean
-}
+import * as React from "react"
+import { cn } from "./utils"
 
-const Input = ({
-  value,
-  onChange,
-  placeholder,
-  type = 'text',
-  label,
-  error,
-  disabled,
-}: InputProps) => {
+function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
-    <div className="flex flex-col gap-1">
-      {label && <label className="text-sm text-gray-600 font-medium">{label}</label>}
-      <input
-        type={type}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        disabled={disabled}
-        className={`px-3 py-2 rounded-lg bg-white border text-gray-900 placeholder-gray-400
-  focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors
-  ${error ? 'border-red-500' : 'border-gray-300'}
-  ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-50' : ''}
-`}
-      />
-      {error && <span className="text-xs text-red-400">{error}</span>}
-    </div>
+    <input
+      type={type}
+      data-slot="input"
+      className={cn(
+        "flex h-10 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-1 text-sm text-slate-900 transition-[color,box-shadow] outline-none",
+        "placeholder:text-slate-400",
+        "focus-visible:border-teal-400 focus-visible:ring-2 focus-visible:ring-teal-200",
+        "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
+        "aria-invalid:border-red-400 aria-invalid:ring-2 aria-invalid:ring-red-100",
+        className,
+      )}
+      {...props}
+    />
   )
 }
 
-export default Input
+export { Input }

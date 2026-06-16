@@ -1,10 +1,11 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { ROUTES } from './routes'
 import PublicRoute from './PublicRoute'
+import { AppLayout } from '../layouts/AppLayout'
+import { TestResults } from '../pages/TestResults'
+import { Login } from '../pages/Login'
+import { Dashboard } from '../pages/Dashboard'
 import PrivateRoute from './PrivateRoute'
-import Login from '@/pages/Login'
-import Home from '@/pages/Home'
-import NotFound from '@/pages/NotFound'
 
 const AppRouter = () => {
   return (
@@ -22,14 +23,30 @@ const AppRouter = () => {
           path={ROUTES.HOME}
           element={
             <PrivateRoute>
-              <Home />
+              <AppLayout>
+                <DashboardPage />
+              </AppLayout>
             </PrivateRoute>
           }
         />
-        <Route path={ROUTES.NOT_FOUND} element={<NotFound />} />
+        <Route
+          path={ROUTES.RESULTS}
+          element={
+            <PrivateRoute>
+              <AppLayout>
+                <TestResults />
+              </AppLayout>
+            </PrivateRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   )
+}
+
+function DashboardPage() {
+  const navigate = useNavigate()
+  return <Dashboard onOpenResults={() => navigate(ROUTES.RESULTS)} />
 }
 
 export default AppRouter
