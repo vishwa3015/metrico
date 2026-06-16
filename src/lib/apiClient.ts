@@ -1,4 +1,5 @@
 import axios from 'axios'
+import qs from 'qs'
 import { useAuthStore } from '../store/authStore'
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'
@@ -7,9 +8,11 @@ export const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 10000,
+   paramsSerializer: (params) => qs.stringify(params, { 
+    skipNulls: true,
+  }),
 })
 
-// ─── Request interceptor — attach access token ────────────────────────────────
 apiClient.interceptors.request.use(
   (config) => {
     const token = useAuthStore.getState().accessToken
@@ -21,7 +24,6 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// ─── Response interceptor — handle 401, refresh token ────────────────────────
 let isRefreshing = false
 let failedQueue: Array<{
   resolve: (token: string) => void

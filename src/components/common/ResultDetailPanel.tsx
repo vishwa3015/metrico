@@ -1,46 +1,38 @@
-import type { TestResult, RangeStatus } from "./data";
-import { StatusBadge } from "./badges";
-import { X, Download, Info, RotateCcw, FlaskConical } from "lucide-react";
+import type { RangeStatus } from "./data"
+import { StatusBadge } from "./badges"
+import { X, Download, Info, RotateCcw, FlaskConical } from "lucide-react"
+import { DetailPanelResult } from "@/types/results.types"
 
-type Analyte = "HOCl" | "pH";
+type Analyte = "HOCl" | "pH"
 
-const HOCL_RANGE = { min: 50, max: 100, label: "50 – 100 ppm", unit: "ppm" };
-const PH_RANGE   = { min: 6.0, max: 8.0, label: "6.0 – 8.0",   unit: "" };
-
-const ROLE_BY_OPERATOR: Record<string, string> = {
-  "J. Okafor":  "Operator",
-  "M. Reyes":   "Supervisor",
-  "S. Müller":  "Operator",
-  "A. Chen":    "Operator",
-};
+const HOCL_RANGE = { min: 50, max: 100, label: "50 – 100 ppm", unit: "ppm" }
+const PH_RANGE = { min: 6.0, max: 8.0, label: "6.0 – 8.0", unit: "" }
 
 function deriveHoclPpm(v: number | null): number | null {
-  if (v === null) return null;
-  return Math.round(v * 40);
+  if (v === null) return null
+  return Math.round(v * 40)
 }
 
-function recomputeHocl(ppm: number | null): RangeStatus {
-  if (ppm === null) return "invalid";
-  if (ppm < HOCL_RANGE.min || ppm > HOCL_RANGE.max) return "out_of_range";
-  if (ppm < HOCL_RANGE.min + 10 || ppm > HOCL_RANGE.max - 10) return "needs_attention";
-  return "in_range";
+function recomputeHoclStatus(ppm: number | null): RangeStatus {
+  if (ppm === null) return "invalid"
+  if (ppm < HOCL_RANGE.min || ppm > HOCL_RANGE.max) return "out_of_range"
+  if (ppm < HOCL_RANGE.min + 10 || ppm > HOCL_RANGE.max - 10) return "needs_attention"
+  return "in_range"
 }
 
 export function ResultDetailPanel({
   result, analyte = "HOCl", onClose,
 }: {
-  result: TestResult | null;
-  analyte?: Analyte;
-  onClose: () => void;
+  result: DetailPanelResult | null
+  analyte?: Analyte
+  onClose: () => void
 }) {
-  if (!result) return null;
+  if (!result) return null
 
-  const isHocl = analyte === "HOCl";
-  const value = isHocl ? deriveHoclPpm(result.hocl) : result.ph;
-  const status = isHocl ? recomputeHocl(deriveHoclPpm(result.hocl)) : result.phStatus;
-  const range  = isHocl ? HOCL_RANGE : PH_RANGE;
-  const cartridgeType = isHocl ? "Metrico HOCl Cartridge (C-HOCl-22)" : "Metrico pH Cartridge (C-pH-22)";
-  const role = ROLE_BY_OPERATOR[result.operator] ?? "Operator";
+  const isHocl = analyte === "HOCl"
+  const value = isHocl ? deriveHoclPpm(result.hocl) : result.ph
+  const status = isHocl ? recomputeHoclStatus(deriveHoclPpm(result.hocl)) : result.phStatus
+  const range = isHocl ? HOCL_RANGE : PH_RANGE
 
   return (
     <div className="fixed inset-0 z-40 flex">
@@ -51,16 +43,18 @@ export function ResultDetailPanel({
             <div className="text-xs text-slate-500">Record</div>
             <div className="text-slate-900 tracking-tight">{result.id} · {analyte}</div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-md hover:bg-slate-100">
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-700 p-1.5 rounded-md hover:bg-slate-100"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs ring-1 ring-inset ${
-              isHocl ? "bg-teal-50 text-teal-700 ring-teal-200" : "bg-sky-50 text-sky-700 ring-sky-200"
-            }`}>
+            <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs ring-1 ring-inset ${isHocl ? "bg-teal-50 text-teal-700 ring-teal-200" : "bg-sky-50 text-sky-700 ring-sky-200"
+              }`}>
               <FlaskConical className="h-3.5 w-3.5" /> {analyte}
             </span>
             <StatusBadge status={status} />
@@ -75,7 +69,9 @@ export function ResultDetailPanel({
               </div>
               {range.unit && <div className="text-sm text-slate-500">{range.unit}</div>}
             </div>
+
             <div className="mt-4 grid grid-cols-2 gap-4">
+              {/* Color swatches */}
               <div>
                 <div className="text-xs text-slate-500 mb-1.5">
                   {isHocl ? "Detected cartridge pads" : "Detected color"}
@@ -83,18 +79,17 @@ export function ResultDetailPanel({
                 {isHocl ? (
                   <div className="flex items-center gap-2">
                     <PadSwatch color={result.hoclYellow} label="Yellow pad" />
-                    <PadSwatch color={result.hoclBlue}   label="Blue pad" />
+                    <PadSwatch color={result.hoclBlue} label="Blue pad" />
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="h-9 w-14 rounded-md ring-1 ring-inset ring-slate-300 shadow-inner"
-                      style={{ backgroundColor: result.phColor }}
-                      aria-label="Detected color"
-                    />
-                  </div>
+                  <span
+                    className="h-9 w-14 rounded-md ring-1 ring-inset ring-slate-300 shadow-inner block"
+                    style={{ backgroundColor: result.phColor }}
+                    aria-label="Detected color"
+                  />
                 )}
               </div>
+
               <div>
                 <div className="text-xs text-slate-500 mb-1.5">Accepted range</div>
                 <div className="text-sm text-slate-800 tabular-nums">{range.label}</div>
@@ -113,22 +108,22 @@ export function ResultDetailPanel({
           <div>
             <div className="text-xs uppercase tracking-wider text-slate-500 mb-2">Test context</div>
             <dl className="grid grid-cols-2 gap-y-2.5 text-sm">
-              <Item k="User name"          v={result.operator} />
-              <Item k="User role"          v={role} />
-              <Item k="Facility"           v={result.site.split(" — ")[0]} />
-              <Item k="Sub-location"       v={result.site.split(" — ")[1] ?? "—"} />
-              <Item k="Organization"       v="Metrico Diagnostics" />
-              <Item k="Device ID"          v={result.device} />
-              <Item k="Cartridge type"     v={cartridgeType} />
-              <Item k="Cartridge lot"      v={result.cartridgeLot} />
-              <Item k="Date / time"        v={result.timestamp} />
+              <Item k="User name" v={result.operator} />
+              <Item k="User role" v={result.operatorRole} />
+              <Item k="Facility" v={result.site} />
+              <Item k="Organization" v={result.organization} />
+              <Item k="Device ID" v={result.device} />
+              <Item k="Cartridge type" v={result.cartridgeType} />
+              <Item k="Date / time" v={result.timestamp} />
             </dl>
           </div>
 
           <div>
             <div className="text-xs uppercase tracking-wider text-slate-500 mb-2">Notes</div>
             <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700 min-h-[64px]">
-              {result.notes ?? <span className="text-slate-400">No notes recorded for this test.</span>}
+              {result.notes ?? (
+                <span className="text-slate-400">No notes recorded for this test.</span>
+              )}
             </div>
           </div>
         </div>
@@ -143,7 +138,7 @@ export function ResultDetailPanel({
         </div>
       </aside>
     </div>
-  );
+  )
 }
 
 function PadSwatch({ color, label }: { color: string; label: string }) {
@@ -156,7 +151,7 @@ function PadSwatch({ color, label }: { color: string; label: string }) {
       />
       <span className="text-[10px] text-slate-500">{label}</span>
     </div>
-  );
+  )
 }
 
 function Item({ k, v }: { k: string; v: string }) {

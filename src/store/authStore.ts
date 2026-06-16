@@ -14,6 +14,8 @@ interface AuthState {
   logout: () => Promise<void>
   setAccessToken: (token: string) => void
   fetchMe: () => Promise<void>
+  getOrganizationId: () => string | null
+  getFacilityId: () => string | null
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -65,7 +67,7 @@ export const useAuthStore = create<AuthState>()(
           const user = await AuthService.me()
           set({ user, isAuthenticated: true })
         } catch {
-          useAuthStore.setState({
+          set({
             user: null,
             accessToken: null,
             refreshToken: null,
@@ -73,6 +75,8 @@ export const useAuthStore = create<AuthState>()(
           })
         }
       },
+      getOrganizationId: () => get().user?.organization_id ?? null,
+      getFacilityId: () => get().user?.facility_id ?? null,
     }),
     {
       name: 'metrico-auth',
