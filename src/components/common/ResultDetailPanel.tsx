@@ -2,6 +2,7 @@ import type { RangeStatus } from "./data"
 import { StatusBadge } from "./badges"
 import { X, Download, Info, RotateCcw, FlaskConical } from "lucide-react"
 import { DetailPanelResult } from "@/types/results.types"
+import { useExport } from "@/hooks/useExport"
 
 type Analyte = "HOCl" | "pH"
 
@@ -27,6 +28,8 @@ export function ResultDetailPanel({
   analyte?: Analyte
   onClose: () => void
 }) {
+  const { exporting, exportById } = useExport()
+
   if (!result) return null
 
   const isHocl = analyte === "HOCl"
@@ -132,8 +135,28 @@ export function ResultDetailPanel({
           <button className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-700 hover:bg-slate-50">
             <RotateCcw className="h-4 w-4" /> View Retest Record
           </button>
-          <button className="ml-auto inline-flex items-center gap-2 rounded-lg bg-gradient-to-b from-teal-500 to-teal-600 px-3.5 py-2 text-sm text-white shadow-sm ring-1 ring-inset ring-teal-700/20 hover:from-teal-500 hover:to-teal-700">
+
+          <button
+            onClick={() => exportById(result.id)}
+            disabled={exporting}
+            className={[
+              'ml-auto inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm',
+              'shadow-sm ring-1 ring-inset ring-teal-700/20 transition-colors',
+              exporting
+                ? 'bg-teal-400 text-white cursor-not-allowed'
+                : 'bg-gradient-to-b from-teal-500 to-teal-600 text-white hover:from-teal-500 hover:to-teal-700',
+            ].join(' ')}
+          >
+            {exporting ? (
+              <>
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Exporting…
+              </>
+            ) : (
+              <>
             <Download className="h-4 w-4" /> Export Record
+              </>
+            )}
           </button>
         </div>
       </aside>

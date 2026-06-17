@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { LogOut } from 'lucide-react'
+import { Toaster } from 'sonner'
 import { ROUTES } from '../router/routes';
 import { useAuthStore } from '../store/authStore';
 import { TopBar } from '../components/common/TopBar';
@@ -61,6 +62,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           {children}
         </div>
       </main>
+      <Toaster position="bottom-right" richColors closeButton />
     </div>
   )
 }

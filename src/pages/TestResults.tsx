@@ -1,15 +1,16 @@
 import { useMemo, useState, useEffect } from "react"
 import { type LucideProps } from "lucide-react"
-import { Calendar, ChevronDown, Search, Filter, Inbox, Eye, X } from "lucide-react"
+import { Calendar, ChevronDown, Search, Filter, Inbox, Eye, X, Download } from 'lucide-react'
 import type { RangeStatus } from "../components/common/data"
-import { Card, EmptyState, ExportButton } from "../components/common/primitives"
+import { Card, EmptyState } from "../components/common/primitives"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui"
 import { ColorSwatch, HoclPads, StatusBadge } from "../components/common/badges"
 import { ResultDetailPanel } from "../components/common/ResultDetailPanel"
 import { useResults } from "../hooks/useResults"
 import { ApiTestResult, DetailPanelResult } from "@/types/results.types"
-import { resultsService } from "@/services/results.service"
-import { ResultsPagination } from "@/components/common/ResultsPagination"
+import { resultsService } from '@/services/results.service'
+import { ResultsPagination } from '@/components/common/ResultsPagination'
+import { useExport } from "@/hooks/useExport"
 
 type IconComponent = React.ComponentType<LucideProps>
 
@@ -161,6 +162,7 @@ export function TestResults({ empty = false }: { empty?: boolean }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [selectedRow, setSelectedRow] = useState<AnalyteRow | null>(null)
   const { users, devices, facilities } = useFilterMeta()
+  const { exporting, exportSelected } = useExport()
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(query.trim()), 400)
@@ -216,6 +218,10 @@ export function TestResults({ empty = false }: { empty?: boolean }) {
     next.has(key) ? next.delete(key) : next.add(key)
     return next
   })
+  const handleExportSelected = () =>
+    exportSelected([...selectedIds], () => setSelectedIds(new Set()))
+
+  const hasSelection = selectedIds.size > 0
 
   return (
     <div className="px-8 py-6 space-y-4">
@@ -337,12 +343,34 @@ export function TestResults({ empty = false }: { empty?: boolean }) {
           )}
 
           <div className="ml-auto flex items-center gap-2">
-            {selectedIds.size > 0 && (
+            {hasSelection && (
               <span className="text-xs text-slate-500">{selectedIds.size} selected</span>
             )}
-            <ExportButton
-              label={selectedIds.size > 0 ? `Export selected (${selectedIds.size})` : "Export selected"}
-            />
+            <button
+              onClick={handleExportSelected}
+              disabled={!hasSelection || exporting}
+              className={[
+                'inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium',
+                'shadow-sm ring-1 ring-inset transition-colors',
+                hasSelection && !exporting
+                  ? 'bg-gradient-to-b from-teal-500 to-teal-600 text-white ring-teal-700/20 hover:from-teal-500 hover:to-teal-700 cursor-pointer'
+                  : 'bg-slate-100 text-slate-400 ring-slate-200 cursor-not-allowed',
+              ].join(' ')}
+            >
+              {exporting ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Exporting…
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4" />
+                  {hasSelection
+                    ? `Export selected (${selectedIds.size})`
+                    : 'Export selected'}
+                </>
+              )}
+            </button>
           </div>
         </div>
       </Card>
