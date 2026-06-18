@@ -1,9 +1,9 @@
 import { type ReactNode } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
-import { ROUTES } from '../router/routes'
-import { TopBar } from '../components/common/TopBar'
-import { Screen, Sidebar } from '@/components/common/Sidebar'
+import { ROUTES } from '../router/routes';
+import { TopBar } from '../components/common/TopBar';
+import { Screen, Sidebar } from '@/components/common/Sidebar';
 
 const titles: Record<Screen, { title: string; crumbs: string[] }> = {
   dashboard: { title: 'Dashboard', crumbs: ['Workspace', 'Dashboard'] },
@@ -19,15 +19,10 @@ const titles: Record<Screen, { title: string; crumbs: string[] }> = {
 const routeToScreen: Record<string, Screen> = {
   [ROUTES.HOME]: 'dashboard',
   [ROUTES.RESULTS]: 'results',
+  [ROUTES.USERS]: 'users'
 }
 
-export function AppLayout({
-  children,
-  topBarActions,
-}: {
-  children: ReactNode
-  topBarActions?: ReactNode
-}) {
+export function AppLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -45,7 +40,6 @@ export function AppLayout({
         <TopBar
           title={meta.title}
           crumbs={meta.crumbs}
-          actions={topBarActions}
         />
         <div className="flex-1 overflow-y-auto">
           {children}

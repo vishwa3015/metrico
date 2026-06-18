@@ -38,6 +38,16 @@ const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue = []
 }
 
+const clearAuthAndRedirect = () => {
+  useAuthStore.setState({
+    user: null,
+    accessToken: null,
+    refreshToken: null,
+    isAuthenticated: false,
+  })
+  window.location.href = '/login'
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -52,14 +62,9 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       const refreshToken = useAuthStore.getState().refreshToken
 
-      // No refresh token — clear state directly, don't call logout()
+      // No refresh token — clear state and redirect
       if (!refreshToken) {
-        useAuthStore.setState({
-          user: null,
-          accessToken: null,
-          refreshToken: null,
-          isAuthenticated: false,
-        })
+        clearAuthAndRedirect()
         return Promise.reject(error)
       }
 
@@ -90,13 +95,7 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest)
       } catch (refreshError) {
         processQueue(refreshError, null)
-        // Clear state directly here too
-        useAuthStore.setState({
-          user: null,
-          accessToken: null,
-          refreshToken: null,
-          isAuthenticated: false,
-        })
+        clearAuthAndRedirect()
         return Promise.reject(refreshError)
       } finally {
         isRefreshing = false
